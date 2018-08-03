@@ -24,10 +24,17 @@ class InMemoryQueue(object):
 
         queue = self.queues[uid]
 
-        head = None
-        if len(queue) >= self.maxsize:
-            head = queue.popleft()
+        head = self.head(uid)
 
         queue.append(metadata)
 
         return head
+
+    def head(self, uid):
+        if uid not in self.queues:
+            return None
+
+        queue = self.queues[uid]
+
+        if len(queue) >= self.maxsize:
+            return queue[0]

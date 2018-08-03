@@ -39,3 +39,19 @@ class BackendTest(unittest.TestCase):
 
         head = self.backend.push('user1', NOW)
         self.assertEqual(head, NOW - 5*SECOND)
+
+    def test_head(self):
+        with self.subTest('not full'):
+            self.fill_queue('testuser', self.maxsize - 1)
+
+            head = self.backend.head('testuser')
+            self.assertIsNone(head)
+
+        with self.subTest('full'):
+            self.fill_queue('testuser', 1)
+            head = self.backend.head('testuser')
+            self.assertIsNotNone(head)
+
+    def test_head_empty(self):
+        head = self.backend.head('testuser')
+        self.assertIsNone(head)
