@@ -1,0 +1,19 @@
+-------------
+Prerequisites
+-------------
+
+1. Python>=3.6
+
+
+-----
+Setup
+-----
+
+1. Checkout code:
+
+    $ git clone XXX ## TODO: insert Github clone link
+    $ cd airtasker
+
+2. Run tests
+
+    $ python3.6 -m unittest
