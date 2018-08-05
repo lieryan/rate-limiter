@@ -3,7 +3,10 @@ Redis-backed queue.
 """
 
 
+import os
 from datetime import datetime
+
+import redis
 
 
 datefmt = "%Y-%m-%d %H:%M:%S"
@@ -23,3 +26,14 @@ class RedisQueue(object):
     def head(self, uid):
         if self.redis.llen(uid) >= self.maxsize:
             return datetime.strptime(self.redis.lindex(uid, -1).decode(), datefmt)
+
+
+def redis_connect():
+    port = os.environ.get('RATELIMITER_REDIS_PORT', 6379)
+
+    try:
+        db = os.environ['RATELIMITER_REDIS_DB']
+    except KeyError:
+        print("RATELIMITER_REDIS_DB is not set.")
+    else:
+        return redis.Redis(port=port, db=db)

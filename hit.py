@@ -13,12 +13,10 @@ some random redis server that you may already have running for something else.
 """
 
 import datetime
-import os
 import sys
 
-from backends.redis import RedisQueue
+from backends.redis import RedisQueue, redis_connect
 import ratelimiter
-import redis
 
 
 class Request(object):
@@ -26,14 +24,10 @@ class Request(object):
         self.remote_user = uid
 
 
-port = os.environ.get('RATELIMITER_REDIS_PORT', 6379)
-
-try:
-    db = os.environ['RATELIMITER_REDIS_DB']
-except KeyError:
-    print("RATELIMITER_REDIS_DB is not set. Read the warning in the documentation before running this script.")
-else:
-    redis = redis.Redis(port=port, db=db)
+redis = redis_connect()
+if not redis:
+    print("Read the warning in the documentation before running this script.")
+    sys.exit(-1)
 
 
 limiter = ratelimiter.RateLimiter(backend=RedisQueue(None, redis=redis))

@@ -19,14 +19,17 @@ def freeze_time():
 
 
 def setup_redis():
-    redis = Redis()
-    redis.flushdb()
-    return redis
+    server = redis.redis_connect()
+    if not server:
+        print("Read the warning in the README before running tests with Redis.")
+
+    server.flushdb()
+    return server
 
 
 try:
     setup_redis()
-except:
+except Exception as e:
     redis_available = False
 else:
     redis_available = True

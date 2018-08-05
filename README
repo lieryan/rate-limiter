@@ -43,3 +43,21 @@ Running tests
 Run tests:
 
     (env) $ python -m unittest
+
+
+-----------------------
+Running test with Redis
+-----------------------
+
+For safety reasons, you must explicitly specify RATELIMITER_REDIS_DB as
+environment variable, this is to prevent the test from accidentally screwing
+some random redis server that you may already have running for something else.
+
+    (env) $ RATELIMITER_REDIS_DB=0 python -m unittest
+
+=======
+WARNING
+=======
+
+Running unittest with Redis will destroy all data in that Redis database. Make
+sure you don't have anything valuable there.
