@@ -14,6 +14,32 @@ Setup
     $ git clone XXX ## TODO: insert Github clone link
     $ cd airtasker
 
-2. Run tests
+-----
+Redis
+-----
 
-    $ python3.6 -m unittest
+This rate limiter module optionally supports a Redis backend, to use:
+
+1. Create and activate virtualenv
+
+    $ python3.6 -m venv env
+    $ source env/bin/activate
+    (env) $ 
+
+2. Install requirements
+
+    (env) $ pip install -r requirements.txt
+
+3. Install Redis using your system's Redis install steps or use the supplied
+   docker-compose.yml:
+
+    (env) $ docker-compose up -d
+
+
+-------------
+Running tests
+-------------
+
+Run tests:
+
+    (env) $ python -m unittest
