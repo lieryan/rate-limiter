@@ -50,3 +50,9 @@ some random redis server that you may already have running for something else.
 
 Running unittest with Redis will destroy all data in that Redis database. Make
 sure you don't have anything valuable there.
+
+# Interactive testing
+
+Run hit.py script to interactively test the rate limiter. Read the
+documentation in the script file before running. This only works with Redis
+backend.
