@@ -8,8 +8,8 @@
 
 1. Checkout code:
 
-       $ git clone XXX ## TODO: insert Github clone link
-       $ cd airtasker
+       $ git clone git@github.com:lieryan/rate-limiter.git
+       $ cd rate-limiter
 
 # Redis
 
