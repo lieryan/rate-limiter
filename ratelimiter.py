@@ -61,6 +61,7 @@ class RateLimiter(object):
         if backend is None:
             backend = memory.InMemoryQueue(maxsize=rate)
         self.backend = backend
+        self.backend.maxsize = rate
 
     def hit(self, request):
         user = self.get_user(request)

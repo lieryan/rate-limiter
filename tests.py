@@ -4,7 +4,8 @@ import unittest
 from unittest.mock import patch
 
 
-from backends import memory
+from redis import Redis
+from backends import memory, redis
 from ratelimiter import RateLimiter, SimpleRequest
 
 
@@ -17,10 +18,23 @@ def freeze_time():
     return patch('ratelimiter.datetime', spec=datetime.datetime)
 
 
-class BackendTest(unittest.TestCase):
+def setup_redis():
+    redis = Redis()
+    redis.flushdb()
+    return redis
+
+
+try:
+    setup_redis()
+except:
+    redis_available = False
+else:
+    redis_available = True
+
+
+class BackendTestMixin(object):
     def setUp(self):
         self.maxsize = 5
-        self.backend = memory.InMemoryQueue(maxsize=self.maxsize)
 
     def fill_queue(self, uid, num, metadatas=[]):
         for _, metadata in zip_longest(range(num), islice(metadatas, num), fillvalue=NOW):
@@ -32,10 +46,13 @@ class BackendTest(unittest.TestCase):
         self.assertEqual(head, None)
 
     def test_push_overflow(self):
-        self.fill_queue('testuser', self.maxsize, [NOW - 5*SECOND])
+        self.fill_queue('testuser', self.maxsize, [NOW - 5*SECOND, NOW - 4*SECOND])
 
         head = self.backend.push('testuser', NOW)
         self.assertEqual(head, NOW - 5*SECOND)
+
+        retrieved_head = self.backend.head('testuser')
+        self.assertEqual(retrieved_head, NOW - 4*SECOND)
 
     def test_push_different_uid(self):
         self.fill_queue('user1', self.maxsize, [NOW - 5*SECOND])
@@ -62,6 +79,20 @@ class BackendTest(unittest.TestCase):
     def test_head_empty(self):
         head = self.backend.head('testuser')
         self.assertIsNone(head)
+
+
+class InMemoryBackendTest(BackendTestMixin, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.backend = memory.InMemoryQueue(maxsize=self.maxsize)
+
+
+@unittest.skipUnless(redis_available, "redis not available")
+class RedisBackendTest(BackendTestMixin, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.redis = setup_redis()
+        self.backend = redis.RedisQueue(maxsize=self.maxsize, redis=self.redis)
 
 
 class GetTimestampTest(unittest.TestCase):
@@ -91,11 +122,9 @@ class GetTimestampTest(unittest.TestCase):
         self.assertEqual(ts, mock_datetime.utcnow.return_value)
 
 
-class RateLimiterTest(unittest.TestCase):
+class RateLimiterTest(object):
     def setUp(self):
         self.maxsize = 5
-        self.limiter = RateLimiter(rate=self.maxsize)
-
         self.request = SimpleRequest('testuser', NOW)
 
     def fill_queue(self, num, requests=[]):
@@ -129,9 +158,34 @@ class RateLimiterTest(unittest.TestCase):
 
         with freeze_time() as mock_datetime:
             mock_datetime.utcnow.return_value = NOW
-            with self.assertRaises(RateLimiter.Exceeded):
-                self.limiter.hit(self.request)
+            with self.subTest("first hit fail since not expired"):
+                with self.assertRaises(RateLimiter.Exceeded):
+                    self.limiter.hit(self.request)
+
+        with freeze_time() as mock_datetime:
+            mock_datetime.utcnow.return_value = NOW
+            with self.subTest("still not expired"):
+                with self.assertRaises(RateLimiter.Exceeded):
+                    self.limiter.hit(self.request)
 
         with freeze_time() as mock_datetime:
             mock_datetime.utcnow.return_value = NOW + 30*SECOND
-            self.limiter.hit(self.request)
+            with self.subTest("now expired"):
+                self.limiter.hit(self.request)
+
+
+class InMemoryRateLimiterTest(RateLimiterTest, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.limiter = RateLimiter(rate=self.maxsize)
+
+
+@unittest.skipUnless(redis_available, "redis not available")
+class RedisRateLimiterTest(RateLimiterTest, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+
+        self.redis = setup_redis()
+        self.backend = redis.RedisQueue(self.maxsize, redis=self.redis)
+        self.limiter = RateLimiter(rate=self.maxsize, backend=self.backend)
